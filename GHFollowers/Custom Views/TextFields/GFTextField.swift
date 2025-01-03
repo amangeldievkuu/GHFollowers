@@ -32,6 +32,9 @@ class GFTextField: UITextField {
         font = UIFont.preferredFont(forTextStyle: .title2)
         adjustsFontSizeToFitWidth = true
         minimumFontSize = 12
+        textContentType = .username
+        autocapitalizationType = .none
+        
         
         backgroundColor = .tertiarySystemBackground
         autocorrectionType = .no
