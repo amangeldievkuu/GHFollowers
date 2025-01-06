@@ -7,6 +7,10 @@
 
 import UIKit
 
+protocol FollowerListVCDelegate: AnyObject {
+    func didRequestFollowers(for username: String)
+}
+
 class FollowerListVC: UIViewController {
     
     enum Section { case main }
@@ -42,6 +46,8 @@ class FollowerListVC: UIViewController {
     private func configureViewController() {
         view.backgroundColor = .systemBackground
         navigationController?.navigationBar.prefersLargeTitles = true
+        let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonTapped))
+        navigationItem.rightBarButtonItem = addButton
     }
     
     
@@ -60,6 +66,7 @@ class FollowerListVC: UIViewController {
         searchController.searchResultsUpdater                 = self
         searchController.searchBar.delegate                   = self
         searchController.searchBar.placeholder                = "Search for a username"
+        searchController.searchBar.autocapitalizationType     = .none
         searchController.obscuresBackgroundDuringPresentation = false
         navigationItem.searchController                       = searchController
     }
@@ -108,8 +115,34 @@ class FollowerListVC: UIViewController {
         DispatchQueue.main.async { self.dataSource.apply(snapshot, animatingDifferences: true) }
     }
     
-}
     
+    @objc func addButtonTapped() {
+        showLoadingView()
+        NetworkManager.shared.getUserInfo(for: userName) {[weak self] result in
+            guard let self = self else { return }
+            self.dismissLoadingView()
+            switch result {
+            case .success(let user):
+                let favorite = Follower(login: user.login, avatarUrl: user.avatarUrl)
+                
+                PersistenceManager.updateWith(favorite: favorite, actionType: .save) { [weak self] error in
+                    guard let self = self else { return }
+                    
+                    guard let error = error else {
+                        self.presentGFAlertOnMainThread(title: "Success!", message: "You have successfully favoreited this user ")
+                        return
+                    }
+                    
+                    self.presentGFAlertOnMainThread(title: "Something went wrong", message: error.rawValue)
+                }
+                
+            case .failure(let error):
+                self.presentGFAlertOnMainThread(title: "Something went wrong", message: error.rawValue)
+            }
+        }
+    }
+}
+
 
 extension FollowerListVC: UICollectionViewDelegate {
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
@@ -130,6 +163,7 @@ extension FollowerListVC: UICollectionViewDelegate {
         
         let destVC = UserInfoVC()
         destVC.username = follower.login
+        destVC.delegate = self
         let navigationController = UINavigationController(rootViewController: destVC)
         present(navigationController, animated: true)
     }
@@ -151,5 +185,17 @@ extension FollowerListVC: UISearchResultsUpdating, UISearchBarDelegate {
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         updateData(on: followers)
         isSearching = false
+    }
+}
+
+
+extension FollowerListVC: FollowerListVCDelegate {
+    func didRequestFollowers(for username: String) {
+        self.userName = username
+        title = username
+        page = 1
+        followers.removeAll()
+        collectionView.setContentOffset(.zero, animated: true)
+        getFollwers(username: username, page: page)
     }
 }
