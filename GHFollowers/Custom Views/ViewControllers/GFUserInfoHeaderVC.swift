@@ -11,12 +11,12 @@ class GFUserInfoHeaderVC: UIViewController {
     
     var user: User!
     
-    let avatarImageView = GFAvatarImageView(frame: .zero)
-    let usernameLabel = GFTitleLabel(textAlignment: .left, fontSize: 34)
-    let nameLabel = GFSecondaryTitleLabel(size: 18)
+    let avatarImageView   = GFAvatarImageView(frame: .zero)
+    let usernameLabel     = GFTitleLabel(textAlignment: .left, fontSize: 34)
+    let nameLabel         = GFSecondaryTitleLabel(size: 18)
     let locationImageView = UIImageView()
-    let locationLabel = GFSecondaryTitleLabel(size: 18)
-    let bioLabel = GFBodyLabel(textAlignment: .left)
+    let locationLabel     = GFSecondaryTitleLabel(size: 18)
+    let bioLabel          = GFBodyLabel(textAlignment: .left)
 
     init(user: User) {
         super.init(nibName: nil, bundle: nil)
@@ -31,32 +31,30 @@ class GFUserInfoHeaderVC: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        addSubviews()
+        view.addSubviews(avatarImageView,usernameLabel,nameLabel,locationImageView,locationLabel,bioLabel)
         layoutUI()
         configureUIElements()
     }
     
     
     func configureUIElements() {
-        avatarImageView.downloadImage(from: user.avatarUrl)
-        usernameLabel.text = user.login
-        nameLabel.text = user.name ?? ""
-        locationLabel.text = user.location ?? "No Location"
-        bioLabel.text = user.bio ?? "No bio"
-        bioLabel.numberOfLines = 3
+        downloadAvatarImage()
+        usernameLabel.text      = user.login
+        nameLabel.text          = user.name ?? ""
+        locationLabel.text      = user.location ?? "No Location"
+        bioLabel.text           = user.bio ?? "No bio"
+        bioLabel.numberOfLines  = 3
         
-        locationImageView.image = UIImage(systemName: SFSymbols.location)
+        locationImageView.image = SFSymbols.location
         locationLabel.tintColor = .secondaryLabel
     }
     
     
-    func addSubviews() {
-        view.addSubview(avatarImageView)
-        view.addSubview(usernameLabel)
-        view.addSubview(nameLabel)
-        view.addSubview(locationImageView)
-        view.addSubview(locationLabel)
-        view.addSubview(bioLabel)
+    private func downloadAvatarImage() {
+        NetworkManager.shared.downloadImage(from: user.avatarUrl) { [weak self] image in
+            guard let self = self else { return }
+            DispatchQueue.main.async { self.avatarImageView.image = image }
+        }
     }
     
     
@@ -94,7 +92,7 @@ class GFUserInfoHeaderVC: UIViewController {
             bioLabel.topAnchor.constraint(equalTo: avatarImageView.bottomAnchor, constant: textImagePadding),
             bioLabel.leadingAnchor.constraint(equalTo: avatarImageView.leadingAnchor),
             bioLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bioLabel.heightAnchor.constraint(equalToConstant: 60),
+            bioLabel.heightAnchor.constraint(equalToConstant: 90),
         ])
     }
     
